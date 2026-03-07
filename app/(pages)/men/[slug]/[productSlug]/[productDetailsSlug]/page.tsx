@@ -26,6 +26,7 @@ type ProductDetails = {
 };
 
 type Category = {
+    _id: string;
     mainCategory: string;
     subCategories: {
         name: string;
@@ -68,24 +69,21 @@ function Page() {
     React.useEffect(() => {
         const fetchProduct = async () => {
             try {
-                const [categoriesResponse, productsResponse] = await Promise.all([
-                    fetch("/api/categories"),
-                    fetch("/api/product-upload"),
-                ]);
+                const categoriesResponse = await fetch("/api/categories");
 
                 const categories: Category[] = await categoriesResponse.json();
-                const data: ProductDetails[] = await productsResponse.json();
-                const isValid = categories.some(
+                const matchedCategory = categories.find(
                     (category) =>
                         toSlug(category.mainCategory) === "men" &&
-                        category.subCategories.some(
-                            (subCategory) =>
-                                toSlug(subCategory.name) === slug &&
-                                (subCategory.subSubCategories ?? []).some(
-                                    (subSubCategory) => toSlug(subSubCategory) === productSlug
-                                )
-                        )
+                        category.subCategories.some((subCategory) => toSlug(subCategory.name) === slug)
                 );
+                const matchedSubCategory = matchedCategory?.subCategories.find(
+                    (subCategory) => toSlug(subCategory.name) === slug
+                );
+                const matchedSubSubCategory = matchedSubCategory?.subSubCategories?.find(
+                    (subSubCategory) => toSlug(subSubCategory) === productSlug
+                );
+                const isValid = Boolean(matchedCategory && matchedSubCategory && matchedSubSubCategory);
 
                 setIsRouteValid(isValid);
 
@@ -93,6 +91,14 @@ function Page() {
                     setProduct(null);
                     return;
                 }
+
+                const query = new URLSearchParams({
+                    categoryId: matchedCategory!._id,
+                    subCategory: matchedSubCategory!.name,
+                    subSubCategory: matchedSubSubCategory!,
+                });
+                const productsResponse = await fetch(`/api/product-upload?${query.toString()}`);
+                const data: ProductDetails[] = await productsResponse.json();
 
                 const byId = extractObjectId(productDetailsSlug);
 

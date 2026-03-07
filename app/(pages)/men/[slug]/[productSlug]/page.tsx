@@ -18,6 +18,7 @@ type ProductItem = {
 };
 
 type Category = {
+    _id: string;
     mainCategory: string;
     subCategories: {
         name: string;
@@ -46,17 +47,18 @@ function Page() {
                 const categoriesResponse = await fetch("/api/categories");
                 const categories: Category[] = await categoriesResponse.json();
 
-                const isValid = categories.some(
+                const matchedCategory = categories.find(
                     (category) =>
                         toSlug(category.mainCategory) === "men" &&
-                        category.subCategories.some(
-                            (subCategory) =>
-                                toSlug(subCategory.name) === slug &&
-                                (subCategory.subSubCategories ?? []).some(
-                                    (subSubCategory) => toSlug(subSubCategory) === productSlug
-                                )
-                        )
+                        category.subCategories.some((subCategory) => toSlug(subCategory.name) === slug)
                 );
+                const matchedSubCategory = matchedCategory?.subCategories.find(
+                    (subCategory) => toSlug(subCategory.name) === slug
+                );
+                const matchedSubSubCategory = matchedSubCategory?.subSubCategories?.find(
+                    (subSubCategory) => toSlug(subSubCategory) === productSlug
+                );
+                const isValid = Boolean(matchedCategory && matchedSubCategory && matchedSubSubCategory);
 
                 setIsRouteValid(isValid);
 
@@ -65,7 +67,12 @@ function Page() {
                     return;
                 }
 
-                const response = await fetch("/api/product-upload");
+                const query = new URLSearchParams({
+                    categoryId: matchedCategory!._id,
+                    subCategory: matchedSubCategory!.name,
+                    subSubCategory: matchedSubSubCategory!,
+                });
+                const response = await fetch(`/api/product-upload?${query.toString()}`);
                 const data = await response.json();
                 setTshirtData(data);
             } catch (error) {
@@ -153,7 +160,7 @@ function Page() {
                         </div>
                     </div>
                     <div className="categoriesSection">
-                        {tshirtData.map((item, index) => {
+                        {tshirtData.length > 0 ? tshirtData.map((item, index) => {
                             const firstImageId = item.galleryImages?.[0];
                             const productDetailsSlug = item._id
                                 ? `${toSlug(item.title)}-${item._id}`
@@ -192,7 +199,7 @@ function Page() {
                                     </div>
                                 </Link>
                             )
-                        })}
+                        }) : <p>No products found.</p>}
                     </div>
 
                 </div>

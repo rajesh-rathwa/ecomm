@@ -1,16 +1,17 @@
-import mongoose, { Schema, models, model } from "mongoose";
+import { Schema, Types, models, model } from "mongoose";
 
 type clothSize = "XS" | "S" | "M" | "L" | "XL" | "XXL";
 type shoeSize = "6" | "6.5" | "7" | "7.5" | "8" | "8.5" | "9" | "9.5" | "10" | "10.5" | "11" | "11.5" | "12";
+type ProductSize = clothSize | shoeSize;
 
 export type Product = {
     brand: string;
     title: string;
     heading?: string;
     galleryImages: string[];
-    sizes: [clothSize | shoeSize] | null;
+    sizes: ProductSize[];
     desc?: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
     // gender-target -> male 
     rating: number;
     Seller?: string;
@@ -19,8 +20,10 @@ export type Product = {
     price: number;
     originalPrice: number;
     discount?: number;
-    category: string;
-    related_products?: string[];
+    category: Types.ObjectId | string;
+    subCategory?: string;
+    subSubCategory?: string;
+    related_products?: Array<Types.ObjectId | string>;
 };
 
 const ProductSchema = new Schema<Product>(
@@ -51,7 +54,7 @@ const ProductSchema = new Schema<Product>(
         sizes: {
             type: [String],
             required: [true, "Sizes are required"],
-            enum: ["XS", "S", "M", "L", "XL", "XXL"],
+            enum: ["XS", "S", "M", "L", "XL", "XXL", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12"],
         },
         desc: {
             type: String,
@@ -95,20 +98,35 @@ const ProductSchema = new Schema<Product>(
         },
 
         category: {
+            type: Schema.Types.ObjectId,
+            ref: "Categories",
+            required: true
+        },
+        subCategory: {
             type: String,
-            required: [true, "Category is required"],
+            required: true,
+            trim: true,
         },
-        related_products: {
-            type: [String],
-            default: [],
+        subSubCategory: {
+            type: String,
+            required: true,
+            trim: true,
         },
+
+        related_products: [{
+            type: Schema.Types.ObjectId,
+            ref: "Product"
+        }]
     },
     {
         timestamps: true,
     }
 );
 
-const ProductModel =
-    models.Product || model<Product>("Product", ProductSchema);
+if (process.env.NODE_ENV !== "production" && models.Product) {
+    delete models.Product;
+}
+
+const ProductModel = models.Product || model<Product>("Product", ProductSchema);
 
 export default ProductModel;

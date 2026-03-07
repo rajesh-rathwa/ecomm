@@ -1,12 +1,24 @@
 'use client';
-import React, { SetStateAction, useState } from 'react'
+import React, { useState } from 'react'
+import { useGet } from '@/app/_lib/hooks/useGet';
 
-function page() {
+type Category = {
+    _id: string;
+    mainCategory: string;
+    subCategories: {
+        name: string;
+        subSubCategories: string[];
+    }[];
+};
+
+function Page() {
     const [form, setForm] = useState({
         brand: '',
         title: '',
         heading: '',
         category: '',
+        subCategory: '',
+        subSubCategory: '',
         description: '',
         price: '',
         originalPrice: '',
@@ -17,15 +29,54 @@ function page() {
         seller: '',
         productLink: '',
     });
+    const { data: categories, loading: categoriesLoading } = useGet<Category[]>("/api/categories", []);
 
     const [sizes, setSizes] = useState<string[]>([]);
     const [files, setFiles] = useState<File[]>([]);
+    const [message, setMessage] = useState<string>("");
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setForm({
+    const selectedCategory = categories.find((category) => category._id === form.category);
+    const availableSubCategories = selectedCategory?.subCategories ?? [];
+    const selectedSubCategory = availableSubCategories.find((subCategory) => subCategory.name === form.subCategory);
+    const availableSubSubCategories = selectedSubCategory?.subSubCategories ?? [];
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+
+        if (name === "category") {
+            setForm((prev) => ({
+                ...prev,
+                category: value,
+                subCategory: "",
+                subSubCategory: "",
+            }));
+            return;
+        }
+
+        if (name === "subCategory") {
+            setForm((prev) => ({
+                ...prev,
+                subCategory: value,
+                subSubCategory: "",
+            }));
+            return;
+        }
+
+        
+        let updatedData = {
             ...form,
-            [e.target.name]: e.target.value
-        });
+            [name]: value
+        };
+
+        const originalPrice = Number(updatedData.originalPrice);
+        const discount = Number(updatedData.discount);
+
+        if (originalPrice && discount) {
+            const price = originalPrice - (originalPrice * discount) / 100;
+            updatedData.price = price.toFixed(2);
+        }
+
+        setForm(updatedData);
     };
 
     const handleSizeChange = (size: string) => {
@@ -60,8 +111,27 @@ function page() {
                 body: formData,
             });
 
-            const data = await res.json();
-            console.log(data);
+            const raw = await res.text();
+            let data: { message?: string } | null = null;
+
+            if (raw) {
+                try {
+                    data = JSON.parse(raw) as { message?: string };
+                } catch {
+                    data = null;
+                }
+            }
+
+            if (!res.ok) {
+                console.error("Product upload failed:", data?.message ?? raw ?? "Unknown error");
+                return;
+            }
+
+            if (data?.message) {
+                setMessage(data.message);
+            }
+
+            console.log("Product uploaded:", data);
 
         } catch (error) {
             console.error(error);
@@ -88,10 +158,68 @@ function page() {
                             <label>Title</label>
                             <input name="title" onChange={handleChange} type="text" placeholder="Enter product title" />
                         </div>
+                        <div className="formSection">
+                            <h3>Product Category</h3>
+                            <div className="formRow">
+                                <div className="formGroup">
+                                    <label>Category</label>
+                                    <select
+                                        name="category"
+                                        value={form.category}
+                                        onChange={handleChange}
+                                        required
+                                    >
+                                        <option value="">
+                                            {categoriesLoading ? "Loading categories..." : "Select category"}
+                                        </option>
+                                        {categories.map((category) => (
+                                            <option key={category._id} value={category._id}>
+                                                {category.mainCategory}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                        <div className="formGroup">
-                            <label>Category</label>
-                            <input name="category" onChange={handleChange} type="text" placeholder="Enter category" />
+                                <div className="formGroup">
+                                    <label>Sub Category</label>
+                                    <select
+                                        name="subCategory"
+                                        value={form.subCategory}
+                                        onChange={handleChange}
+                                        required
+                                        disabled={!form.category}
+                                    >
+                                        <option value="">
+                                            {!form.category ? "Select category first" : "Select sub category"}
+                                        </option>
+                                        {availableSubCategories.map((subCategory) => (
+                                            <option key={subCategory.name} value={subCategory.name}>
+                                                {subCategory.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="formGroup">
+                                    <label>Sub Sub Category</label>
+                                    <select
+                                        name="subSubCategory"
+                                        value={form.subSubCategory}
+                                        onChange={handleChange}
+                                        required
+                                        disabled={!form.subCategory}
+                                    >
+                                        <option value="">
+                                            {!form.subCategory ? "Select sub category first" : "Select sub sub category"}
+                                        </option>
+                                        {availableSubSubCategories.map((subSubCategory) => (
+                                            <option key={subSubCategory} value={subSubCategory}>
+                                                {subSubCategory}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -135,7 +263,7 @@ function page() {
                         <h3>Description</h3>
 
                         <div className="formGroup">
-                            <textarea name="description" onChange={handleChange} placeholder="Enter description"></textarea>
+                            <textarea name="description" value={form.description} onChange={handleChange} placeholder="Enter description"></textarea>
                         </div>
                     </div>
 
@@ -144,19 +272,35 @@ function page() {
                         <h3>Pricing</h3>
 
                         <div className="formRow">
-                            <div className="formGroup">
-                                <label>Price</label>
-                                <input name="price" onChange={handleChange} type="number" />
-                            </div>
+                            
 
                             <div className="formGroup">
                                 <label>Original Price</label>
-                                <input name="originalPrice" onChange={handleChange} type="number" />
+                                <input
+                                name="originalPrice"
+                                type="number"
+                                value={form.originalPrice}
+                                onChange={handleChange}
+                                />
                             </div>
 
                             <div className="formGroup">
                                 <label>Discount (%)</label>
-                                <input name="discount" onChange={handleChange} type="number" />
+                                <input
+                                name="discount"
+                                type="number"
+                                value={form.discount}
+                                onChange={handleChange}
+                                />
+                            </div>
+                            <div className="formGroup">
+                                <label>Price</label>
+                                <input
+                                name="price"
+                                type="number"
+                                value={form.price}
+                                readOnly
+                                />
                             </div>
                         </div>
                     </div>
@@ -192,7 +336,7 @@ function page() {
                     <div className="formSubmit">
                         <button type="submit">Save Product</button>
                     </div>
-
+                    {message && <p>{message}</p>}
                 </form>
             </div>
         </div>
@@ -200,4 +344,4 @@ function page() {
     )
 }
 
-export default page
+export default Page

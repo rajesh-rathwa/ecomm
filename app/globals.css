@@ -192,8 +192,8 @@ h6 span.normal{ font-weight: 400; }
 }
 
 .adminPanel .productForm .formGroup input,
-.adminPanel .productForm .formGroup textarea {
-  padding: 10px;
+.adminPanel .productForm .formGroup textarea, .adminPanel .productForm .formGroup select {
+  padding: 10px; 
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 14px;
