@@ -4,6 +4,7 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import type { CartItem, CartResponse } from "@/app/_lib/types";
 
+// This page component shows cart items, address form and order summary.
 function Page() {
 
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -18,6 +19,7 @@ function Page() {
         pincode: "",
     });
 
+    // This function gets latest cart data from cart API.
     const loadCart = React.useCallback(async () => {
         try {
             setLoading(true);
@@ -42,6 +44,7 @@ function Page() {
     }, []);
 
     useEffect(() => {
+        // This runs when page loads and calls cart loading function.
         const timeoutId = window.setTimeout(() => {
             void loadCart();
         }, 0);
@@ -51,6 +54,7 @@ function Page() {
         };
     }, [loadCart]);
 
+    // This function updates delivery form input values.
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
@@ -62,6 +66,7 @@ function Page() {
 
     };
 
+    // This function removes one item from cart.
     const removeItem = (
         productId: string,
         size: string
@@ -95,6 +100,7 @@ function Page() {
         })();
     };
 
+    // This function increases or decreases product quantity in cart.
     const updateQuantity = (
         productId: string,
         size: string,
@@ -130,6 +136,7 @@ function Page() {
         })();
     };
 
+    // This calculates total original price before discount.
     const totalMRP = cartItems.reduce(
         (acc, item) =>
             acc +
@@ -138,6 +145,7 @@ function Page() {
         0
     );
 
+    // This calculates final product price after discount.
     const totalPrice = cartItems.reduce(
         (acc, item) =>
             acc +
@@ -145,12 +153,15 @@ function Page() {
         0
     );
 
+    // This calculates how much discount user is getting.
     const totalDiscount =
         totalMRP - totalPrice;
 
+    // This calculates final payable amount with extra fee.
     const finalAmount =
         totalPrice + 23;
 
+    // This function checks form, places order and clears cart after success.
     const handlePlaceOrder =
         async () => {
 

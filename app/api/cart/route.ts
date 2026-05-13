@@ -13,12 +13,16 @@ type CartActionRequest =
     | { action: "updateQuantity"; productId: string; size: string; type: "increase" | "decrease" }
     | { action: "clear" };
 
+// This function makes final response data for cart API.
+// It also calculates total cart item count.
 const buildCartResponse = (items: CartItem[]): CartResponse => ({
     success: true,
     items,
     cartCount: items.reduce((total, item) => total + item.quantity, 0),
 });
 
+// This function gets old cart session id from cookie.
+// If cookie is not there, it creates a new session id.
 async function getOrCreateSessionId() {
     const cookieStore = await cookies();
     const existingSessionId = cookieStore.get(CART_COOKIE_NAME)?.value;
@@ -33,6 +37,7 @@ async function getOrCreateSessionId() {
     };
 }
 
+// This function sets cart session id in browser cookie.
 function attachCartCookie(response: NextResponse, sessionId: string) {
     response.cookies.set(CART_COOKIE_NAME, sessionId, {
         httpOnly: true,
@@ -42,6 +47,7 @@ function attachCartCookie(response: NextResponse, sessionId: string) {
     });
 }
 
+// GET function is used to get all cart items and total item count.
 export async function GET() {
     try {
         await connectDB();
@@ -64,6 +70,8 @@ export async function GET() {
     }
 }
 
+// POST function is used to add new item in cart.
+// If same product and size already exist, it increases quantity.
 export async function POST(req: Request) {
     try {
         await connectDB();
@@ -128,6 +136,8 @@ export async function POST(req: Request) {
     }
 }
 
+// PATCH function is used to update cart data.
+// Here we can remove item, change quantity, or clear full cart.
 export async function PATCH(req: Request) {
     try {
         await connectDB();

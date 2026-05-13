@@ -22,8 +22,11 @@ type MenuItem = { label: string; link: string };
 type MenuColumn = { title: string; items: MenuItem[] };
 type HeaderMenu = { id: string; label: string; columns: MenuColumn[] };
 
+// This function changes normal text into URL-friendly text.
+// Example: "Men Shoes" becomes "men-shoes".
 const toSlug = (value: string) => value.toLowerCase().trim().replace(/\s+/g, "-");
 
+// This Header component shows logo, menu, search, profile, wishlist and cart section.
 function Header() {
     const { data: categories, loading } = useGet<Category[]>("/api/categories", []);
     const { data: session, status } = useSession();
@@ -31,6 +34,7 @@ function Header() {
     const [wishlistCount, setWishlistCount] = useState(0);
 
     useEffect(() => {
+        // This function gets latest cart item count from API.
         const updateCartCount = async () => {
             try {
                 const response = await fetch("/api/cart", {
@@ -50,10 +54,12 @@ function Header() {
             }
         };
 
+        // This function runs when custom cart update event happens.
         const handleCartUpdated = () => {
             void updateCartCount();
         };
 
+        // First time page loads, cart count will come here.
         void updateCartCount();
 
         window.addEventListener(
@@ -62,6 +68,7 @@ function Header() {
         );
 
         return () => {
+            // Cleanup: remove event listener when component unmounts.
             window.removeEventListener(
                 "cartUpdated",
                 handleCartUpdated
@@ -70,6 +77,7 @@ function Header() {
     }, []);
 
     useEffect(() => {
+        // This function gets latest wishlist item count from API.
         const updateWishlistCount = async () => {
             try {
                 const response = await fetch("/api/wishlist", {
@@ -89,10 +97,12 @@ function Header() {
             }
         };
 
+        // This function runs when custom wishlist update event happens.
         const handleWishlistUpdated = () => {
             void updateWishlistCount();
         };
 
+        // First time page loads, wishlist count will come here.
         void updateWishlistCount();
 
         window.addEventListener(
@@ -101,6 +111,7 @@ function Header() {
         );
 
         return () => {
+            // Cleanup: remove event listener when component unmounts.
             window.removeEventListener(
                 "wishlistUpdated",
                 handleWishlistUpdated
@@ -108,6 +119,7 @@ function Header() {
         };
     }, []);
 
+    // Here API category data is changing into menu format for the header.
     const dynamicMenu: HeaderMenu[] = categories.map((category) => ({
         id: category._id,
         label: category.mainCategory,
@@ -120,6 +132,7 @@ function Header() {
         })),
     }));
 
+    // If dynamic category data is not available, then default megaMenu will show.
     const navigationMenu: HeaderMenu[] =
         dynamicMenu.length > 0 ? dynamicMenu : (megaMenu as HeaderMenu[]);
 

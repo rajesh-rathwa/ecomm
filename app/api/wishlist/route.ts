@@ -13,12 +13,15 @@ type WishlistActionRequest =
     | { action: "updateSize"; productId: string; size: string }
     | { action: "clear" };
 
+// This function makes the final response format for wishlist API.
 const buildWishlistResponse = (items: WishlistItem[]): WishlistResponse => ({
     success: true,
     items,
     wishlistCount: items.length,
 });
 
+// This function gets old wishlist session id from cookie.
+// If cookie is not there, it creates a new session id.
 async function getOrCreateSessionId() {
     const cookieStore = await cookies();
     const existingSessionId = cookieStore.get(WISHLIST_COOKIE_NAME)?.value;
@@ -33,6 +36,7 @@ async function getOrCreateSessionId() {
     };
 }
 
+// This function sets wishlist session id in browser cookie.
 function attachWishlistCookie(response: NextResponse, sessionId: string) {
     response.cookies.set(WISHLIST_COOKIE_NAME, sessionId, {
         httpOnly: true,
@@ -42,6 +46,7 @@ function attachWishlistCookie(response: NextResponse, sessionId: string) {
     });
 }
 
+// GET function is used to get all wishlist items and item count.
 export async function GET() {
     try {
         await connectDB();
@@ -64,6 +69,8 @@ export async function GET() {
     }
 }
 
+// POST function is used to add new item in wishlist.
+// If item already exists, it updates that item data.
 export async function POST(req: Request) {
     try {
         await connectDB();
@@ -130,6 +137,8 @@ export async function POST(req: Request) {
     }
 }
 
+// PATCH function is used to update wishlist data.
+// Here we can remove item, update size, or clear full wishlist.
 export async function PATCH(req: Request) {
     try {
         await connectDB();

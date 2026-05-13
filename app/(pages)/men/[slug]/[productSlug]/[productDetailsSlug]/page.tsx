@@ -24,7 +24,7 @@ type ProductDetails = {
     price: number;
     originalPrice?: number;
     discount?: number;
-    category?: string;
+category?: string;
 subCategory?: string;
 subSubCategory?: string;
 };
@@ -38,18 +38,24 @@ type Category = {
     }[];
 };
 
+// This function handles route param safely.
+// If param comes in array, it takes first value.
 const normalizeParam = (param: string | string[] | undefined) =>
     Array.isArray(param) ? param[0] : param ?? "";
 
+// This function changes text into URL-friendly format.
 const toSlug = (value: string) => value.toLowerCase().trim().replace(/\s+/g, "-");
 
+// This function gets MongoDB ObjectId from slug text.
 const extractObjectId = (value: string) => {
     const parts = value.split("-");
     const candidate = parts[parts.length - 1] ?? "";
     return /^[a-fA-F0-9]{24}$/.test(candidate) ? candidate : "";
 };
 
+// This page component shows single product full details.
 function Page() {
+    // These settings are used for product image slider.
     const settings = {
         dots: false,
         infinite: true,
@@ -73,6 +79,7 @@ function Page() {
     const [isInWishlist, setIsInWishlist] = React.useState(false);
     const [wishlistLoading, setWishlistLoading] = React.useState(false);
 
+// This function adds selected product into cart.
 const handleAddToCart = async () => {
 
     if (!product) return;
@@ -142,6 +149,7 @@ const handleAddToCart = async () => {
     }
 };
 
+// This function adds product to wishlist or removes it from wishlist.
 const handleWishlistToggle = async () => {
     if (!product?._id) {
         alert("Product ID is missing");
@@ -207,6 +215,7 @@ const handleWishlistToggle = async () => {
 };
 
     React.useEffect(() => {
+        // This function gets product details based on URL and also checks wishlist status.
         const fetchProduct = async () => {
             try {
                 const categoriesResponse = await fetch("/api/categories");
@@ -281,10 +290,12 @@ const handleWishlistToggle = async () => {
         fetchProduct();
     }, [slug, productSlug, productDetailsSlug]);
 
+    // While data is loading, loading message will show.
     if (loading) {
         return <div className="pad100 container">Loading product details...</div>;
     }
 
+    // If URL category or product path is wrong, not found page will show.
     if (!isRouteValid) {
         return (
             <div className="pad100 container">
@@ -294,6 +305,7 @@ const handleWishlistToggle = async () => {
         );
     }
 
+    // If route is correct but product data is missing, product not found will show.
     if (!product) {
         return (
             <div className="pad100 container">
