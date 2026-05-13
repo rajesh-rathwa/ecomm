@@ -4,6 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { megaMenu } from "./megaMenu";
 import { useGet } from "@/app/_lib/hooks/useGet";
+import type { CartResponse, WishlistResponse } from "@/app/_lib/types";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import React from "react";
 
 type Category = {
     _id: string;
@@ -22,6 +26,87 @@ const toSlug = (value: string) => value.toLowerCase().trim().replace(/\s+/g, "-"
 
 function Header() {
     const { data: categories, loading } = useGet<Category[]>("/api/categories", []);
+    const { data: session, status } = useSession();
+    const [cartCount, setCartCount] = useState(0);
+    const [wishlistCount, setWishlistCount] = useState(0);
+
+    useEffect(() => {
+        const updateCartCount = async () => {
+            try {
+                const response = await fetch("/api/cart", {
+                    cache: "no-store",
+                });
+                const data = (await response.json()) as CartResponse;
+
+                if (!response.ok || !data.success) {
+                    setCartCount(0);
+                    return;
+                }
+
+                setCartCount(data.cartCount);
+            } catch (error) {
+                console.error("Cart count error:", error);
+                setCartCount(0);
+            }
+        };
+
+        const handleCartUpdated = () => {
+            void updateCartCount();
+        };
+
+        void updateCartCount();
+
+        window.addEventListener(
+            "cartUpdated",
+            handleCartUpdated
+        );
+
+        return () => {
+            window.removeEventListener(
+                "cartUpdated",
+                handleCartUpdated
+            );
+        };
+    }, []);
+
+    useEffect(() => {
+        const updateWishlistCount = async () => {
+            try {
+                const response = await fetch("/api/wishlist", {
+                    cache: "no-store",
+                });
+                const data = (await response.json()) as WishlistResponse;
+
+                if (!response.ok || !data.success) {
+                    setWishlistCount(0);
+                    return;
+                }
+
+                setWishlistCount(data.wishlistCount);
+            } catch (error) {
+                console.error("Wishlist count error:", error);
+                setWishlistCount(0);
+            }
+        };
+
+        const handleWishlistUpdated = () => {
+            void updateWishlistCount();
+        };
+
+        void updateWishlistCount();
+
+        window.addEventListener(
+            "wishlistUpdated",
+            handleWishlistUpdated
+        );
+
+        return () => {
+            window.removeEventListener(
+                "wishlistUpdated",
+                handleWishlistUpdated
+            );
+        };
+    }, []);
 
     const dynamicMenu: HeaderMenu[] = categories.map((category) => ({
         id: category._id,
@@ -82,23 +167,33 @@ function Header() {
                     <button className="profileBtn">
                         <Image src="/images/profile.png" alt="Profile" width={100} height={100} /> Profile
                         <div className="profileDopdown">
-                            <div className="loginSection">
-                                <p>
-                                    <b>Welcome</b> <br /> To access account and manage orders
-                                </p>
-                                <Link href="/signup" className="loginButton">
-                                    Login / Signup
-                                </Link>
-                            </div>
+
+                            {session && status === "authenticated" ? (
+                                <div className="profileLinks">
+                                    <Link href="/logout" className="loginButton">
+                                        Logout
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="loginSection">
+                                    <p>
+                                        <b>Welcome</b> <br /> To access account and manage orders
+                                    </p>
+
+                                    <Link href="/signup" className="loginButton">
+                                        Login / Signup
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     </button>
-                    <button className="profileBtn">
+                    <Link href="/wishlist" className="profileBtn">
                         <Image src="/images/wishlist.png" alt="Wishlist" width={100} height={100} />
-                        Wishlist
-                    </button>
+                        Wishlist ({wishlistCount})
+                    </Link>
                     <Link href="/checkout/cart" className="profileBtn">
                         <Image src="/images/bag.png" alt="Bag" width={100} height={100} />
-                        Bag
+                        Bag ({cartCount})
                     </Link>
                 </div>
             </div>

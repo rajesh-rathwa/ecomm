@@ -6,6 +6,7 @@ type ProductSize = clothSize | shoeSize;
 
 export type Product = {
     brand: string;
+    filterCategories: string;
     title: string;
     heading?: string;
     galleryImages: string[];
@@ -32,6 +33,10 @@ const ProductSchema = new Schema<Product>(
             type: String,
             required: [true, "Brand is required"],
             trim: true,
+        },
+        filterCategories :{
+            type: String,
+            required: [true, "Filter categories are required"],
         },
 
         title: {

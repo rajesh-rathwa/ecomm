@@ -4,6 +4,13 @@ import { connectDB } from "@/app/_lib/utills/mongoose";
 
 export const runtime = "nodejs";
 
+type GridFsFileDocument = {
+  contentType?: string;
+  metadata?: {
+    contentType?: string;
+  };
+};
+
 export async function GET(
   _: Request,
   context: { params: Promise<{ id: string }> }
@@ -31,19 +38,36 @@ export async function GET(
     }
 
     const downloadStream = bucket.openDownloadStream(fileId);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        downloadStream.on("data", (chunk: Buffer) => {
+          controller.enqueue(new Uint8Array(chunk));
+        });
+        downloadStream.on("end", () => {
+          controller.close();
+        });
+        downloadStream.on("error", (error) => {
+          controller.error(error);
+        });
+      },
+      cancel() {
+        downloadStream.destroy();
+      },
+    });
+    const typedFile = file as GridFsFileDocument;
 
     const contentType =
-      (file as any).contentType ||
-      (file as any).metadata?.contentType ||
+      typedFile.contentType ||
+      typedFile.metadata?.contentType ||
       "application/octet-stream";
 
-    return new NextResponse(downloadStream as any, {
+    return new NextResponse(stream, {
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Failed to load file" }, { status: 500 });
   }
 }

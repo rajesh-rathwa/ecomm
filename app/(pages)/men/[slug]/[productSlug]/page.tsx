@@ -8,6 +8,7 @@ import { MdOutlineStarPurple500 } from "react-icons/md";
 type ProductItem = {
     _id?: string;
     brand: string;
+    filterCategories: string;
     title: string;
     galleryImages?: string[];
     rating: number;
@@ -29,6 +30,11 @@ type Category = {
 const toSlug = (value: string) => value.toLowerCase().trim().replace(/\s+/g, "-");
 const normalizeParam = (param: string | string[] | undefined) =>
     Array.isArray(param) ? param[0] : param ?? "";
+const countItems = (values: string[]) =>
+    values.reduce<Record<string, number>>((counts, value) => {
+        counts[value] = (counts[value] ?? 0) + 1;
+        return counts;
+    }, {});
 
 function Page() {
     const params = useParams();
@@ -38,6 +44,12 @@ function Page() {
     const [tshirtData, setTshirtData] = useState<ProductItem[]>([]);
     const [isRouteValid, setIsRouteValid] = useState(false);
     const [routeChecked, setRouteChecked] = useState(false);
+
+    const [brands, setBrands] = useState<string[]>([]);
+    const [filterCategories, setFilterCategories] = useState<string[]>([]);
+
+    const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
     console.log("Fetched T-shirt Data:", tshirtData);
 
@@ -72,9 +84,21 @@ function Page() {
                     subCategory: matchedSubCategory!.name,
                     subSubCategory: matchedSubSubCategory!,
                 });
+                await fetch(`/api/filter?category=${matchedCategory?._id}&subCategory=${matchedSubCategory?.name}&subSubCategory=${matchedSubSubCategory}`)
+                    .then((res) => res.json())
+                    .then((data) => {
+                        setBrands(
+                            data.brands || []
+                        );
+                        setFilterCategories(
+                            data.categories || []
+                        )
+                    });
+
                 const response = await fetch(`/api/product-upload?${query.toString()}`);
                 const data = await response.json();
                 setTshirtData(data);
+
             } catch (error) {
                 console.error("Error fetching t-shirt data:", error);
                 setIsRouteValid(false);
@@ -85,6 +109,34 @@ function Page() {
 
         validateRouteAndFetch();
     }, [slug, productSlug]);
+
+    const toggleItem = (
+        value: string,
+        setList: React.Dispatch<React.SetStateAction<string[]>>
+    ) => {
+        setList((prev) =>
+            prev.includes(value)
+                ? prev.filter((item) => item !== value)
+                : [...prev, value]
+        );
+    };
+
+    let filteredProducts = [...tshirtData];
+
+    if (selectedBrands.length > 0) {
+        filteredProducts = filteredProducts.filter((item) =>
+            selectedBrands.includes(item.brand)
+        );
+    }
+
+    if (selectedCategories.length > 0) {
+        filteredProducts = filteredProducts.filter((item) =>
+            selectedCategories.includes(item.filterCategories)
+        );
+    }
+
+    const categoryCounts = countItems(tshirtData.map((item) => item.filterCategories));
+    const brandCounts = countItems(tshirtData.map((item) => item.brand));
 
     if (!routeChecked) {
         return <div className="pad100 container">Loading products...</div>;
@@ -111,56 +163,58 @@ function Page() {
                         <div className="filterCategories">
                             <h6>Categories</h6>
                             <div className="checkboxField">
-                                <div className="checkboxInput">
-                                    <input type="checkbox" name="categories" id="tshirt" />
-                                    <label htmlFor="tshirt">Tshirts(262061)</label>
-                                </div>
-                                <div className="checkboxInput">
-                                    <input type="checkbox" name="categories" id="longeTshirt" />
-                                    <label htmlFor="longeTshirt">Lounge Tshirts(1530)</label>
-                                </div>
+                                {filterCategories.length > 0 ? filterCategories.map((category, index) => (
+                                    <div className="checkboxInput" key={index}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedCategories.includes(category)}
+                                            id={category}
+                                            onChange={() =>
+                                                toggleItem(
+                                                    category,
+                                                    setSelectedCategories
+                                                )
+                                            }
+                                        />
+                                        <label htmlFor={category}>{category} ({categoryCounts[category] ?? 0})</label>
+                                    </div>
+                                )) : (
+                                    <div className="checkboxInput">
+                                        <input type="checkbox" name="categories" id="tshirt" />
+                                        <label htmlFor="tshirt">Tshirts(262061)</label>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="filterCategories">
                             <h6>Brand</h6>
                             <div className="checkboxField">
-                                <div className="checkboxInput">
-                                    <input type="checkbox" name="brand" id="woostro" />
-                                    <label htmlFor="woostro">WOOSTRO(9437)</label>
-                                </div>
-                                <div className="checkboxInput">
-                                    <input type="checkbox" name="brand" id="brand2" />
-                                    <label htmlFor="brand2">Moda Rapido(7190)</label>
-                                </div>
-                                <div className="checkboxInput">
-                                    <input type="checkbox" name="brand" id="brand3" />
-                                    <label htmlFor="brand3">SZN(5809)</label>
-                                </div>
-                                <div className="checkboxInput">
-                                    <input type="checkbox" name="brand" id="brand4" />
-                                    <label htmlFor="brand4">Seekbuylove(5067)</label>
-                                </div>
-                                <div className="checkboxInput">
-                                    <input type="checkbox" name="brand" id="brand5" />
-                                    <label htmlFor="brand5">Roadster(4546)</label>
-                                </div>
-                                <div className="checkboxInput">
-                                    <input type="checkbox" name="brand" id="brand6" />
-                                    <label htmlFor="brand6">HRX by Hrithik Roshan(4145)</label>
-                                </div>
-                                <div className="checkboxInput">
-                                    <input type="checkbox" name="brand" id="brand7" />
-                                    <label htmlFor="brand7">Tommy Hilfiger(4095)</label>
-                                </div>
-                                <div className="checkboxInput">
-                                    <input type="checkbox" name="brand" id="brand8" />
-                                    <label htmlFor="brand8">Friskers(3994)</label>
-                                </div>
+                                {brands.length > 0 ? brands.map((brand, index) => (
+                                    <div className="checkboxInput" key={index}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedBrands.includes(brand)}
+                                            id={brand}
+                                            onChange={() =>
+                                                toggleItem(
+                                                    brand,
+                                                    setSelectedBrands
+                                                )
+                                            }
+                                        />
+                                        <label htmlFor={brand}>{brand} ({brandCounts[brand] ?? 0})</label>
+                                    </div>
+                                )) : (
+                                    <div className="checkboxInput">
+                                        <input type="checkbox" name="brand" id="woostro" />
+                                        <label htmlFor="woostro">WOOSTRO(9437)</label>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
                     <div className="categoriesSection">
-                        {tshirtData.length > 0 ? tshirtData.map((item, index) => {
+                        {filteredProducts.length > 0 ? filteredProducts.map((item, index) => {
                             const firstImageId = item.galleryImages?.[0];
                             const productDetailsSlug = item._id
                                 ? `${toSlug(item.title)}-${item._id}`
@@ -186,7 +240,7 @@ function Page() {
                                     </div>
 
                                     <div className="text">
-                                        <h6>{item.brand}</h6>
+                                        <h6>{item.brand} {item.filterCategories}</h6>
                                         <p>{item.title}</p>
 
                                         <p className="price">

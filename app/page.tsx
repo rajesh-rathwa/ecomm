@@ -1,6 +1,10 @@
 import Image from "next/image";
-import LogoutButton from "./(auth)/login/LogoutButton";
 import Link from "next/link";
+
+const homeProducts = Array.from({ length: 13 }, (_, index) => ({
+  id: index + 1,
+  src: `/images/home/product-${index + 1}.webp`,
+}));
 
 export default function Home() {
   return (
@@ -11,71 +15,18 @@ export default function Home() {
             <h2>Shop By Category</h2>
           </div>
           <div className="categorySection">
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-1.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-2.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-3.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-4.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-5.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-6.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-7.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-8.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-9.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-10.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-11.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-12.webp" alt="" />
-              </Link>
-            </div>
-            <div className="caregoryCard">
-              <Link href="#">
-                <img src="images/home/product-13.webp" alt="" />
-              </Link>
-            </div>
+            {homeProducts.map((product) => (
+              <div className="caregoryCard" key={product.id}>
+                <Link href="#">
+                  <Image
+                    src={product.src}
+                    alt={`Shop category product ${product.id}`}
+                    width={300}
+                    height={420}
+                  />
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       </div>

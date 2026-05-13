@@ -1,8 +1,15 @@
 import NextAuth from "next-auth";
+import type { Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import User from "@/app/models/User";
-import connectDB from "@/app/_lib/utills/mongoose";
+import {connectDB} from "@/app/_lib/utills/mongoose";
+
+type SessionWithUserId = Session & {
+    user?: Session["user"] & {
+        id?: string;
+    };
+};
 
 const handler = NextAuth({
     providers: [
@@ -54,7 +61,8 @@ const handler = NextAuth({
         },
         async session({ session, token }) {
             if (session.user) {
-                (session.user as any).id = token.id;
+                (session as SessionWithUserId).user!.id =
+                    typeof token.id === "string" ? token.id : undefined;
             }
             return session;
         },

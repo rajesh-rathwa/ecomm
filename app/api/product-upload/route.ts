@@ -17,6 +17,7 @@ export async function POST(req: Request) {
 
         const prdctTitle = String(productDetails.get("title") ?? "");
         const prdctBrand = String(productDetails.get("brand") ?? "");
+        const filterCategories = String(productDetails.get("filterCategories") ?? "");
         const prdctCategory = String(productDetails.get("category") ?? "");
         const prdctSubCategory = String(productDetails.get("subCategory") ?? "");
         const prdctSubSubCategory = String(productDetails.get("subSubCategory") ?? "");
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
                 (ALLOWED_SIZES as readonly string[]).includes(size)
             );
 
-        if (!prdctTitle || !prdctBrand || !prdctCategory || !prdctSubCategory || !prdctSubSubCategory) {
+        if (!prdctTitle || !prdctBrand || !filterCategories || !prdctCategory || !prdctSubCategory || !prdctSubSubCategory) {
             return NextResponse.json(
                 { success: false, message: "Missing required fields" },
                 { status: 400 }
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
         const product: Product = {
             title: prdctTitle,
             brand: prdctBrand,
+            filterCategories: filterCategories,
             category: prdctCategory,
             subCategory: prdctSubCategory,
             subSubCategory: prdctSubSubCategory,
@@ -91,9 +93,19 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
     await connectDB();
     const { searchParams } = new URL(req.url);
+    const productId = searchParams.get("productId");
     const categoryId = searchParams.get("categoryId");
     const subCategory = searchParams.get("subCategory");
     const subSubCategory = searchParams.get("subSubCategory");
+
+    if (productId) {
+        if (!Types.ObjectId.isValid(productId)) {
+            return NextResponse.json(null, { status: 400 });
+        }
+
+        const product = await ProductModel.findById(productId);
+        return NextResponse.json(product);
+    }
 
     const query: Record<string, unknown> = {};
 

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useGet } from '@/app/_lib/hooks/useGet';
 
 type Category = {
@@ -14,6 +14,7 @@ type Category = {
 function Page() {
     const [form, setForm] = useState({
         brand: '',
+        filterCategories: "",
         title: '',
         heading: '',
         category: '',
@@ -34,39 +35,21 @@ function Page() {
     const [sizes, setSizes] = useState<string[]>([]);
     const [files, setFiles] = useState<File[]>([]);
     const [message, setMessage] = useState<string>("");
+    const [brands, setBrands] = useState<string[]>([]);
+    const [filterCategories, setFilterCategories] = useState<string[]>([]);
 
     const selectedCategory = categories.find((category) => category._id === form.category);
     const availableSubCategories = selectedCategory?.subCategories ?? [];
     const selectedSubCategory = availableSubCategories.find((subCategory) => subCategory.name === form.subCategory);
     const availableSubSubCategories = selectedSubCategory?.subSubCategories ?? [];
+    const selectedSubSubCategory = availableSubSubCategories.find((subSubCategory) => subSubCategory === form.subSubCategory);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
 
-        if (name === "category") {
-            setForm((prev) => ({
-                ...prev,
-                category: value,
-                subCategory: "",
-                subSubCategory: "",
-            }));
-            return;
-        }
-
-        if (name === "subCategory") {
-            setForm((prev) => ({
-                ...prev,
-                subCategory: value,
-                subSubCategory: "",
-            }));
-            return;
-        }
-
-        
-        let updatedData = {
-            ...form,
-            [name]: value
-        };
+        if (name === "category") { setForm((prev) => ({ ...prev, category: value, subCategory: "", subSubCategory: "", })); return; }
+        if (name === "subCategory") { setForm((prev) => ({ ...prev, subCategory: value, subSubCategory: "", })); return; }
+        const updatedData = { ...form, [name]: value };
 
         const originalPrice = Number(updatedData.originalPrice);
         const discount = Number(updatedData.discount);
@@ -78,6 +61,33 @@ function Page() {
 
         setForm(updatedData);
     };
+
+    useEffect(() => {
+        if (
+            !selectedCategory ||
+            !selectedSubCategory ||
+            !selectedSubSubCategory
+        )
+            return;
+
+        fetch(`/api/filter?category=${form.category}&subCategory=${form.subCategory}&subSubCategory=${form.subSubCategory}`)
+            .then((res) => res.json())
+            .then((data) => {
+                setBrands(
+                    data.brands || []
+                );
+                setFilterCategories(
+                    data.categories || []
+                )
+            });
+    }, [
+        form.category,
+        form.subCategory,
+        form.subSubCategory,
+        selectedCategory,
+        selectedSubCategory,
+        selectedSubSubCategory,
+    ]);
 
     const handleSizeChange = (size: string) => {
         setSizes((prev) =>
@@ -148,16 +158,6 @@ function Page() {
 
                     <div className="formSection">
                         <h3>Basic Information</h3>
-
-                        <div className="formGroup">
-                            <label>Brand</label>
-                            <input name='brand' onChange={handleChange} type="text" placeholder="Enter brand name" />
-                        </div>
-
-                        <div className="formGroup">
-                            <label>Title</label>
-                            <input name="title" onChange={handleChange} type="text" placeholder="Enter product title" />
-                        </div>
                         <div className="formSection">
                             <h3>Product Category</h3>
                             <div className="formRow">
@@ -182,13 +182,7 @@ function Page() {
 
                                 <div className="formGroup">
                                     <label>Sub Category</label>
-                                    <select
-                                        name="subCategory"
-                                        value={form.subCategory}
-                                        onChange={handleChange}
-                                        required
-                                        disabled={!form.category}
-                                    >
+                                    <select name="subCategory" value={form.subCategory} onChange={handleChange} required disabled={!form.category} >
                                         <option value="">
                                             {!form.category ? "Select category first" : "Select sub category"}
                                         </option>
@@ -202,13 +196,7 @@ function Page() {
 
                                 <div className="formGroup">
                                     <label>Sub Sub Category</label>
-                                    <select
-                                        name="subSubCategory"
-                                        value={form.subSubCategory}
-                                        onChange={handleChange}
-                                        required
-                                        disabled={!form.subCategory}
-                                    >
+                                    <select name="subSubCategory" value={form.subSubCategory} onChange={handleChange} required disabled={!form.subCategory} >
                                         <option value="">
                                             {!form.subCategory ? "Select sub category first" : "Select sub sub category"}
                                         </option>
@@ -220,6 +208,49 @@ function Page() {
                                     </select>
                                 </div>
                             </div>
+                        </div>
+                        <div className="formGroup">
+                            <div className="formGroup">
+                                <label>Brand</label>
+                                <select name="brand" value={form.brand} onChange={handleChange} required disabled={!form.subSubCategory} >
+                                    <option value="">
+                                        {!form.subSubCategory ? "Select all categories first" : "Select brand"}
+                                    </option>
+                                    {brands.map((brand, index) => (
+                                        <option key={index} value={brand}>
+                                            {brand}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="formGroup">
+                            <label>Filter Categories</label>
+
+                            <select
+                                name="filterCategories"
+                                value={form.filterCategories || ""}
+                                onChange={handleChange}
+                                required
+                                disabled={!form.subSubCategory}
+                            >
+                                <option value="">
+                                    {!form.subSubCategory
+                                        ? "Select all categories first"
+                                        : "Select Filter Category"}
+                                </option>
+
+                                {filterCategories.map((category, index) => (
+                                    <option key={index} value={category}>
+                                        {category}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="formGroup">
+                            <label>Title</label>
+                            <input name="title" onChange={handleChange} type="text" placeholder="Enter product title" />
                         </div>
                     </div>
 
@@ -272,34 +303,34 @@ function Page() {
                         <h3>Pricing</h3>
 
                         <div className="formRow">
-                            
+
 
                             <div className="formGroup">
                                 <label>Original Price</label>
                                 <input
-                                name="originalPrice"
-                                type="number"
-                                value={form.originalPrice}
-                                onChange={handleChange}
+                                    name="originalPrice"
+                                    type="number"
+                                    value={form.originalPrice}
+                                    onChange={handleChange}
                                 />
                             </div>
 
                             <div className="formGroup">
                                 <label>Discount (%)</label>
                                 <input
-                                name="discount"
-                                type="number"
-                                value={form.discount}
-                                onChange={handleChange}
+                                    name="discount"
+                                    type="number"
+                                    value={form.discount}
+                                    onChange={handleChange}
                                 />
                             </div>
                             <div className="formGroup">
                                 <label>Price</label>
                                 <input
-                                name="price"
-                                type="number"
-                                value={form.price}
-                                readOnly
+                                    name="price"
+                                    type="number"
+                                    value={form.price}
+                                    readOnly
                                 />
                             </div>
                         </div>

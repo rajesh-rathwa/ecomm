@@ -8,7 +8,7 @@ async function page() {
         redirect("/");
       }
     return (
-        <div>page</div>
+        <div>Dashboard</div>
     )
 }
 

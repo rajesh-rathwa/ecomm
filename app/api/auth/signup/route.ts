@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import User from "@/app/models/User";
-import connectDB from "@/app/_lib/utills/mongoose";
+import { connectDB } from "@/app/_lib/utills/mongoose";
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       { message: "Signup successful" },
       { status: 201 }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

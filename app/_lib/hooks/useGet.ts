@@ -7,29 +7,51 @@ export function useGet<T>(url: string, initialValue: T) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (signal?: AbortSignal) => {
+        await Promise.resolve();
+
+        if (signal?.aborted) {
+            return;
+        }
+
         setLoading(true);
         setError(null);
 
         try {
-            const res = await fetch(url);
+            const res = await fetch(url, { signal });
 
             if (!res.ok) {
                 throw new Error(`Request failed with status ${res.status}`);
             }
 
             const result = (await res.json()) as T;
-            setData(result);
+            if (!signal?.aborted) {
+                setData(result);
+            }
         } catch (err) {
+            if (signal?.aborted) {
+                return;
+            }
+
             const message = err instanceof Error ? err.message : "Something went wrong";
             setError(message);
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
     }, [url]);
 
     useEffect(() => {
-        fetchData();
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => {
+            void fetchData(controller.signal);
+        }, 0);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+            controller.abort();
+        };
     }, [fetchData]);
 
     return {

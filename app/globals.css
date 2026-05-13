@@ -4,7 +4,7 @@
 
 :root {--background: #ffffff;--foreground: #171717;}
 @theme inline {--color-background: var(--background);--color-foreground: var(--foreground);--font-sans: var(--font-geist-sans);--font-mono: var(--font-geist-mono);}
-@media (prefers-color-scheme: dark) {:root {  --background: #0a0a0a;  --foreground: #ededed;}}
+@media (prefers-color-scheme: dark) {:root {  --background: #0a0a0a;  --foreground: brown;}}
 body {background: var(--background);color: var(--foreground);font-family: Arial, Helvetica, sans-serif;}
 
 .container{ max-width: calc(100% - 8%); margin: 0 auto;}
@@ -19,7 +19,7 @@ h5 span.normal{ font-weight: 400; }
 h6{ font-weight: 700; font-size: 16px;}
 h6 span.normal{ font-weight: 400; }
 
-.navigationSection{ background-color: #fff5f5; }
+.navigationSection{ background-color: green; }
 .navigationSection .mainLogo a img{ width: 50px;}
 .navigationSection .container{ display: flex; gap: 20px; justify-content: space-between; align-items: center;}
 .navigationSection .navigationMenu{ display: flex; gap: 40px; font-size: 16px; font-weight: 700; position: relative; width: 100%; max-width: 600px; padding: 0 30px;}
@@ -99,6 +99,7 @@ h6 span.normal{ font-weight: 400; }
 .productDetailsPage .productInfo .actions { display: flex; gap: 10px; margin-top: 20px;}
 .productDetailsPage .productInfo .actions .addToBag { flex: 1; background: #ff3f6c; color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer;}
 .productDetailsPage .productInfo .actions .wishlist { flex: 1; border: 1px solid #ccc; background: white; padding: 12px; cursor: pointer;}
+.productDetailsPage .productInfo .actions .wishlist:disabled { opacity: 0.7; cursor: wait;}
 .productDetailsPage .productInfo .seller { margin-top: 15px;}
 .productDetailsPage .productInfo .seller .strike { text-decoration: line-through; color: #888;}
 .productDetailsPage .productInfo .seller .sellerName { color: #ff3f6c;}
@@ -149,6 +150,25 @@ h6 span.normal{ font-weight: 400; }
 .cartPage .cartRight .priceDetails .discount {color: green;}
 .cartPage .cartRight .priceDetails .total {font-weight: bold;}
 .cartPage .cartRight .priceDetails .placeOrder {width: 100%;background: #ff3f6c;color: white;border: none;padding: 12px;margin-top: 10px;cursor: pointer;}
+
+.wishlistGrid {display: grid;grid-template-columns: repeat(4, 1fr);gap: 24px;}
+.wishlistCard {border: 1px solid #ececec;background: #fff;}
+.wishlistCard .wishlistImage {display: block;background: #f7f7f7;}
+.wishlistCard .wishlistImage img {width: 100%;height: 320px;object-fit: cover;}
+.wishlistCard .wishlistContent {padding: 16px;}
+.wishlistCard .wishlistContent p {font-size: 14px;color: #555;margin: 8px 0;}
+.wishlistCard .wishlistSizes {display: flex;flex-wrap: wrap;gap: 10px;margin: 12px 0 8px;}
+.wishlistCard .wishlistSizes button {min-width: 44px;padding: 8px 12px;border: 1px solid #d7d7d7;background: #fff;font-size: 12px;line-height: 1;cursor: pointer;}
+.wishlistCard .wishlistSizes button.active {border-color: #ff3f6c;color: #ff3f6c;font-weight: 700;}
+.wishlistCard .wishlistPrice {display: flex;gap: 8px;align-items: center;flex-wrap: wrap;margin-top: 10px;}
+.wishlistCard .wishlistPrice .strike {text-decoration: line-through;color: #888;font-size: 13px;}
+.wishlistCard .wishlistPrice .off {color: #ff3f6c;font-size: 13px;font-weight: 600;}
+.wishlistCard .wishlistActions {display: flex;gap: 10px;margin-top: 16px;}
+.wishlistCard .wishlistActions button {flex: 1;border: none;background: #ff3f6c;color: #fff;padding: 12px;font-size: 12px;font-weight: 700;cursor: pointer;}
+.wishlistCard .wishlistActions button.secondary {background: #fff;color: #111;border: 1px solid #ddd;}
+.wishlistEmpty {border: 1px solid #ececec;padding: 40px;text-align: center;background: #fff;}
+.wishlistEmpty p {margin: 8px 0 16px;color: #666;}
+.wishlistEmpty a {display: inline-block;background: #ff3f6c;color: #fff;padding: 12px 18px;}
 
 .adminPanel {
   background: #f5f6fa;

@@ -13,11 +13,10 @@ type Cached = {
 };
 
 declare global {
-  // eslint-disable-next-line no-var
   var mongoose: Cached | undefined;
 }
 
-let cached: Cached = global.mongoose || { conn: null, promise: null };
+const cached: Cached = global.mongoose || { conn: null, promise: null };
 
 export async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) return cached.conn;

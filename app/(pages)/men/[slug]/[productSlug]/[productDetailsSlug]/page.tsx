@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Slider from "react-slick";
+import type { CartItem, CartResponse, WishlistItem, WishlistResponse } from "@/app/_lib/types";
 
 type ProductDetails = {
     _id?: string;
@@ -23,6 +24,9 @@ type ProductDetails = {
     price: number;
     originalPrice?: number;
     discount?: number;
+    category?: string;
+subCategory?: string;
+subSubCategory?: string;
 };
 
 type Category = {
@@ -56,6 +60,7 @@ function Page() {
         autoplaySpeed: 2000,
     };
 
+    const router = useRouter();
     const params = useParams();
     const slug = normalizeParam(params?.slug);
     const productSlug = normalizeParam(params?.productSlug);
@@ -65,6 +70,141 @@ function Page() {
     const [selectedSize, setSelectedSize] = React.useState<string>("");
     const [loading, setLoading] = React.useState(true);
     const [isRouteValid, setIsRouteValid] = React.useState(false);
+    const [isInWishlist, setIsInWishlist] = React.useState(false);
+    const [wishlistLoading, setWishlistLoading] = React.useState(false);
+
+const handleAddToCart = async () => {
+
+    if (!product) return;
+    if (!product._id) {
+        alert("Product ID is missing");
+        return;
+    }
+
+    if (!selectedSize) {
+        alert("Please select size");
+        return;
+    }
+
+    const cartItem: CartItem = {
+
+        productId: product._id,
+
+        title: product.title,
+
+        brand: product.brand,
+
+        image:
+            product.galleryImages?.length
+                ? `/api/uploads/${product.galleryImages[0]}`
+                : "/images/tshirt/tshirt1.webp",
+
+        price: product.price,
+
+        originalPrice: product.originalPrice,
+
+        discount: product.discount,
+
+        size: selectedSize,
+
+        quantity: 1,
+
+        seller: sellerName,
+
+        stock: product.stock,
+    };
+
+    try {
+        const response = await fetch("/api/cart", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ item: cartItem }),
+        });
+        const data = (await response.json()) as CartResponse;
+
+        if (!response.ok || !data.success) {
+            alert("Failed to add product to bag");
+            return;
+        }
+
+        window.dispatchEvent(
+            new Event("cartUpdated")
+        );
+
+        alert("Product added to bag");
+
+        router.push("/checkout/cart");
+    } catch (error) {
+        console.error("Add to cart error:", error);
+        alert("Failed to add product to bag");
+    }
+};
+
+const handleWishlistToggle = async () => {
+    if (!product?._id) {
+        alert("Product ID is missing");
+        return;
+    }
+
+    const wishlistItem: WishlistItem = {
+        productId: product._id,
+        title: product.title,
+        brand: product.brand,
+        image: product.galleryImages?.length
+            ? `/api/uploads/${product.galleryImages[0]}`
+            : "/images/tshirt/tshirt1.webp",
+        price: product.price,
+        originalPrice: product.originalPrice,
+        discount: product.discount,
+        size: selectedSize,
+        availableSizes: product.sizes ?? [],
+        seller: sellerName,
+        stock: product.stock,
+        href: `/men/${slug}/${productSlug}/${productDetailsSlug}`,
+    };
+
+    try {
+        setWishlistLoading(true);
+
+        const response = await fetch("/api/wishlist", {
+            method: isInWishlist ? "PATCH" : "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(
+                isInWishlist
+                    ? {
+                        action: "remove",
+                        productId: product._id,
+                    }
+                    : {
+                        item: wishlistItem,
+                    }
+            ),
+        });
+        const data = (await response.json()) as WishlistResponse;
+
+        if (!response.ok || !data.success) {
+            alert("Failed to update wishlist");
+            return;
+        }
+
+        const nextState = data.items.some(
+            (item) => item.productId === product._id
+        );
+
+        setIsInWishlist(nextState);
+        window.dispatchEvent(new Event("wishlistUpdated"));
+        alert(nextState ? "Product added to wishlist" : "Product removed from wishlist");
+    } catch (error) {
+        console.error("Wishlist update error:", error);
+        alert("Failed to update wishlist");
+    } finally {
+        setWishlistLoading(false);
+    }
+};
 
     React.useEffect(() => {
         const fetchProduct = async () => {
@@ -113,6 +253,21 @@ function Page() {
                 setProduct(found ?? null);
                 if (found?.sizes?.length) {
                     setSelectedSize(found.sizes[0]);
+                }
+
+                if (found?._id) {
+                    const wishlistResponse = await fetch("/api/wishlist", {
+                        cache: "no-store",
+                    });
+                    const wishlistData = (await wishlistResponse.json()) as WishlistResponse;
+
+                    if (wishlistResponse.ok && wishlistData.success) {
+                        setIsInWishlist(
+                            wishlistData.items.some(
+                                (wishlistItem) => wishlistItem.productId === found._id
+                            )
+                        );
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching product details:", error);
@@ -228,8 +383,10 @@ function Page() {
                                 </div>
 
                                 <div className="actions">
-                                    <button className="addToBag">ADD TO BAG</button>
-                                    <button className="wishlist">WISHLIST</button>
+                                    <button className="addToBag"  onClick={handleAddToCart}>ADD TO BAG</button>
+                                    <button className="wishlist" onClick={handleWishlistToggle} disabled={wishlistLoading}>
+                                        {wishlistLoading ? "UPDATING..." : isInWishlist ? "WISHLISTED" : "WISHLIST"}
+                                    </button>
                                 </div>
 
                                 <hr />
@@ -249,7 +406,7 @@ function Page() {
                                     </p>
                                 </div>
 
-                                <div className="delivery">
+                                {/* <div className="delivery">
                                     <h4>DELIVERY OPTIONS</h4>
                                     <div className="pincodeBox">
                                         <input type="text" placeholder="Enter pincode" />
@@ -258,7 +415,7 @@ function Page() {
                                     <p className="note">
                                         Please enter PIN code to check delivery time and payment availability
                                     </p>
-                                </div>
+                                </div> */}
                             </div>
 
                             <hr />
